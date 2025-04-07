@@ -1,70 +1,86 @@
-ARG PYTHON_VERSION="3.8.13-slim-bullseye"
-ARG NODE_VERSION="18.20-bullseye-slim"
+ARG PYTHON_VERSION="3.9-slim-bookworm"
+ARG NODE_VERSION="22-slim"
+
 FROM node:${NODE_VERSION} AS frontend-builder
 
-COPY frontend/ /frontend/
-WORKDIR /frontend
-ENV PUBLIC_PATH="/static/_nuxt/"
-# hadolint ignore=DL3008
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git python3 make g++ ca-certificates \
- && git config --global url."https://github.com/".insteadOf git://github.com/ \
- && yarn install --network-timeout 1000000 \
- && yarn build \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+   && apt-get install -y --no-install-recommends git python3 make g++ ca-certificates \
+   && apt-get clean \
+   && rm -rf /var/lib/apt/lists/* \
+   && corepack enable \
+   && corepack prepare pnpm@latest --activate
+
+WORKDIR /frontend
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+
+RUN pnpm install --frozen-lockfile
+
+COPY frontend/ ./
+
+ENV PUBLIC_PATH="/static/_nuxt/"
+
+RUN pnpm run build
+
 
 FROM python:${PYTHON_VERSION} AS backend-builder
 
-# hadolint ignore=DL3008
 RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-    netcat=1.* \
-    libpq-dev=13.* \
-    unixodbc-dev=2.* \
-    g++=4:* \
-    libssl-dev=1.* \
-    curl \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+   && apt-get install -y --no-install-recommends \
+   netcat-openbsd \
+   libpq-dev \
+   unixodbc-dev \
+   g++ \
+   libssl-dev \
+   curl \
+   && apt-get clean \
+   && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /tmp
-COPY backend/pyproject.toml backend/poetry.lock /tmp/
-SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
 
-RUN pip install -U --no-cache-dir pip==22.2.2 \
- && curl -sSL https://install.python-poetry.org | python - \
- && export PATH="/root/.local/bin:$PATH" \
- && poetry export --without-hashes -o /requirements.txt \
- && echo "psycopg2-binary==2.8.6" >> /requirements.txt \
- && echo "django-heroku==0.3.1" >> /requirements.txt \
- && pip install --no-cache-dir -r /requirements.txt
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+
+ENV PATH="/root/.local/bin/:$PATH"
+
+# RUN pip install -U --no-cache-dir pip \
+#    && pip install --no-cache-dir uv
+
+WORKDIR /backend
+COPY backend/pyproject.toml ./
+COPY backend/ ./
+
+# RUN uv sync --system pyproject.toml
+RUN uv pip install --system . 
 
 FROM python:${PYTHON_VERSION} AS runtime
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-    libpq-dev=13.* \
-    unixodbc-dev=2.* \
-    libssl-dev=1.* \
- && apt-get clean \
- && rm -rf /var/lib/apt/lists/*
+   && apt-get install -y --no-install-recommends \
+   libpq-dev \
+   unixodbc-dev \
+   libssl-dev \
+   python-is-python3 \
+   && apt-get clean \
+   && rm -rf /var/lib/apt/lists/*
+
 
 RUN useradd -ms /bin/sh doccano
 RUN mkdir /data \
- && chown doccano:doccano /data
+   && chown doccano:doccano /data
 
-COPY --from=backend-builder /usr/local/lib/python3.8/site-packages /usr/local/lib/python3.8/site-packages
+COPY --from=backend-builder /usr/local/lib/python3.9/site-packages /usr/local/lib/python3.9/site-packages
 COPY --from=backend-builder /usr/local/bin/celery /usr/local/bin/celery
 COPY --from=backend-builder /usr/local/bin/gunicorn /usr/local/bin/gunicorn
 
 COPY --chown=doccano:doccano . /doccano
 WORKDIR /doccano/backend
+
 COPY --from=frontend-builder /frontend/dist /doccano/backend/client/dist
+
 RUN python manage.py collectstatic --noinput \
- && chown -R doccano:doccano .
+   && chown -R doccano:doccano .
 
 VOLUME /data
+
 ENV DATABASE_URL="sqlite:////data/doccano.db"
 
 ENV DEBUG="False"
@@ -75,6 +91,9 @@ ENV WORKERS="2"
 ENV CELERY_WORKERS="2"
 ENV GOOGLE_TRACKING_ID=""
 ENV DJANGO_SETTINGS_MODULE="config.settings.production"
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1 
 
 USER doccano
 EXPOSE ${PORT}

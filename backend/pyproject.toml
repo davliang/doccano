@@ -1,94 +1,108 @@
-[tool.poetry]
+[project]
 name = "doccano"
 version = "1.8.4"
 description = "doccano, text annotation tool for machine learning practitioners"
-authors = ["Hironsan <hiroki.nakayama.py@gmail.com>"]
-license = "MIT"
+authors = [{ name = "Hironsan", email = "hiroki.nakayama.py@gmail.com" }]
+requires-python = ">=3.9"
 readme = "README.md"
-homepage = "https://doccano.github.io/doccano/"
-repository = "https://github.com/doccano/doccano"
-documentation = "https://doccano.github.io/doccano/"
+license = "MIT"
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
 ]
-packages = [
-    { include = "backend", from = ".." },
+dependencies = [
+    "Django>=4.1.7,<5",
+    "environs>=9.5.0,<10",
+    "furl>=2.1.3,<3",
+    "djangorestframework>=3.14.0,<4",
+    "django-filter~=22.1",
+    "django-polymorphic>=3.1.0,<4",
+    "django-cors-headers>=3.13.0,<4",
+    "drf-yasg>=1.21.5,<2",
+    "django-rest-polymorphic>=0.1.9,<0.2",
+    "chardet>=4.0.0,<5",
+    "pyexcel>=0.7.0,<0.8",
+    "seqeval>=1.2.2,<2",
+    "whitenoise>=6.0.0,<7",
+    "dj-database-url>=0.5.0,<0.6",
+    "pyexcel-xlsx>=0.6.0,<0.7",
+    "gunicorn>=23.0.0,<24",
+    "auto-labeling-pipeline>=0.1.21,<0.2",
+    "dj-rest-auth[with_social]>=2.2.5,<3",
+    "django-drf-filepond>=0.5.0,<0.6",
+    "celery>=5.2.3,<6",
+    "django-celery-results==2.4.0",
+    "SQLAlchemy>=1.4.31,<2",
+    "waitress>=2.0.0,<3",
+    "django-health-check>=3.16.5,<4",
+    "djangorestframework-xml>=2.0.0,<3",
+    "django-storages[google]>=1.13.1,<2",
+    "django-cleanup>=6.0.0,<7",
+    "filetype>=1.0.10,<2",
+    "pandas>=1.4.2,<2",
+    "flower>=1.2.0,<2",
+    "django-allauth>=0.52.0,<0.53",
+    "pydantic>=2.0.3,<3",
+    "setuptools>=78.1.0",
+    "numpy==1.26.4",
 ]
-include = [
-    "backend/client/dist/**/*",
-    "backend/staticfiles/**/*"
+
+[project.optional-dependencies]
+postgresql = ["psycopg2-binary>=2.9.10"]
+mssql = ["django-mssql-backend>=2.8.1"]
+
+[project.urls]
+Homepage = "https://doccano.github.io/doccano/"
+Repository = "https://github.com/doccano/doccano"
+Documentation = "https://doccano.github.io/doccano/"
+
+[project.scripts]
+doccano = "backend.cli:main"
+
+[dependency-groups]
+dev = [
+    "model-mommy>=2.0.0,<3",
+    "coverage>=6.3.1,<7",
+    "flake8>=4.0.1,<5",
+    "isort>=5.10.1,<6",
+    "autopep8>=1.6.0,<2",
+    "mypy>=1.4.1,<2",
+    "watchdog>=2.1.6,<3",
+    "black>=22.1.0,<23",
+    "pyproject-flake8>=0.0.1a2,<0.0.2",
+    "types-chardet>=4.0.3,<5",
+    "types-requests>=2.27.10,<3",
+    "types-waitress>=2.0.6,<3",
+    "taskipy>=1.10.1,<2",
+    "unittest-xml-reporting>=3.2.0,<4",
 ]
+
+[tool.hatch.build.targets.sdist]
+include = ["../backend", "backend/client/dist/**/*", "backend/staticfiles/**/*"]
 exclude = [
     "backend/filepond-temp-uploads",
     "backend/media",
     "backend/db.sqlite3*",
-    "backend/poetry.lock"
+    "backend/poetry.lock",
 ]
 
-[tool.poetry.extras]
-mssql = ["django-mssql-backend"]
-postgresql = ["psycopg2-binary"]
+[tool.hatch.build.targets.wheel]
+include = ["../backend", "backend/client/dist/**/*", "backend/staticfiles/**/*"]
+exclude = [
+    "backend/filepond-temp-uploads",
+    "backend/media",
+    "backend/db.sqlite3*",
+    "backend/poetry.lock",
+]
 
-[tool.poetry.scripts]
-doccano = 'backend.cli:main'
-
-[tool.poetry.dependencies]
-python = "^3.8"
-Django = "^4.1.7"
-environs = "^9.5.0"
-furl = "^2.1.3"
-djangorestframework = "^3.14.0"
-django-filter = "^22.1"
-django-polymorphic = "^3.1.0"
-django-cors-headers = "^3.13.0"
-drf-yasg = "^1.21.5"
-django-rest-polymorphic = "^0.1.9"
-chardet = "^4.0.0"
-pyexcel = "^0.7.0"
-seqeval = "^1.2.2"
-whitenoise = "^6.0.0"
-dj-database-url = "^0.5.0"
-pyexcel-xlsx = "^0.6.0"
-gunicorn = "^23.0.0"
-auto-labeling-pipeline = "^0.1.21"
-dj-rest-auth = {extras = ["with_social"], version = "^2.2.5"}
-django-drf-filepond = "^0.5.0"
-celery = "^5.2.3"
-django-celery-results = "2.4.0"
-SQLAlchemy = "^1.4.31"
-waitress = "^2.0.0"
-django-health-check = "^3.16.5"
-djangorestframework-xml = "^2.0.0"
-django-storages = {extras = ["google"], version = "^1.13.1"}
-django-cleanup = "^6.0.0"
-filetype = "^1.0.10"
-pandas = "^1.4.2"
-flower = "^1.2.0"
-django-allauth = "^0.52.0"
-pydantic = "^2.0.3"
-
-[tool.poetry.dev-dependencies]
-model-mommy = "^2.0.0"
-coverage = "^6.3.1"
-flake8 = "^4.0.1"
-isort = {extras = ["pyproject"], version = "^5.10.1"}
-autopep8 = "^1.6.0"
-mypy = "^1.4.1"
-watchdog = "^2.1.6"
-black = "^22.1.0"
-pyproject-flake8 = "^0.0.1-alpha.2"
-types-chardet = "^4.0.3"
-types-requests = "^2.27.10"
-types-waitress = "^2.0.6"
-taskipy = "^1.10.1"
-unittest-xml-reporting = "^3.2.0"
+[tool.hatch.build.targets.wheel.sources]
+"../backend" = "backend"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.poetry-dynamic-versioning]
 enable = false
@@ -108,10 +122,7 @@ filename = "*.py"
 python_version = "3.8"
 ignore_missing_imports = true
 show_error_codes = true
-exclude = [
-    "migrations",
-    "config",
-]
+exclude = ["migrations", "config"]
 
 [tool.isort]
 profile = "black"
@@ -130,7 +141,7 @@ known_first_party = [
     "projects",
     "roles",
     "users",
-    "social"
+    "social",
 ]
 known_local_folder = [
     "api",
@@ -145,7 +156,7 @@ known_local_folder = [
     "projects",
     "roles",
     "users",
-    "social"
+    "social",
 ]
 
 [tool.taskipy.tasks]
